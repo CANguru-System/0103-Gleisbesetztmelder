@@ -120,18 +120,18 @@ void process_sensor_event(uint8_t channel)
   // alt und neu
   if (channelStatus[channel] == isOccupied)
   {
-  // Zustand alt Data4
+    // Zustand alt Data4
     opFrame[data4] = isFree;
-  // Zustand neu Data5
+    // Zustand neu Data5
     opFrame[data5] = isOccupied;
     log_i("ch: %d o: %d", channel, opFrame[data3]);
   }
   else
   {
     log_i("ch: %d f: %d", channel, opFrame[data3]);
-  // Zustand alt Data4
+    // Zustand alt Data4
     opFrame[data4] = isOccupied;
-  // Zustand neu Data5
+    // Zustand neu Data5
     opFrame[data5] = isFree;
   }
   // Zeit Data6 und Data7
@@ -207,11 +207,15 @@ void setup()
   addMaster();
   WiFi.disconnect();
   // die preferences-Library wird gestartet
-  if (preferences.begin("STEPPER", false))
+  if (preferences.begin("MELDER", false))
   {
     log_i("Preferences erfolgreich gestartet");
   }
-  uint8_t setup_todo = preferences.getUChar("setup_done", 0xFF);
+  uint8_t setup_todo;
+  if (preferences.isKey("setup_done"))
+    setup_todo = preferences.getUChar("setup_done", 0xFF);
+  else
+    log_i("setup_done nicht gefunden! Bitte zunächst Installationsroutine aufrufen!");
   if (setup_todo != setup_done)
   {
     // alles fürs erste Mal
@@ -222,7 +226,7 @@ void setup()
 
     for (uint8_t ch = 0; ch < maxCntChannels; ch++)
     {
-      preferences.putUChar("channel_index"+ ('0' + ch), channel_index[ch]);
+      preferences.putUChar("channel_index" + ('0' + ch), channel_index[ch]);
     }
 
     // ota auf "FALSE" setzen
@@ -240,7 +244,7 @@ void setup()
       // nach dem ersten Mal Einlesen der gespeicherten Werte
       for (uint8_t ch = 0; ch < maxCntChannels; ch++)
       {
-        channel_index[ch] = readValfromPreferences(preferences, "channel_index"+ ('0' + ch), minadr, minadr, maxadr);
+        channel_index[ch] = readValfromPreferences(preferences, "channel_index" + ('0' + ch), minadr, minadr, maxadr);
       }
     }
     else
@@ -253,11 +257,23 @@ void setup()
   // ab hier werden die Anweisungen bei jedem Start durchlaufen
   // IP-Adresse
   char ip[4]; // prepare a buffer for the data
-  preferences.getBytes("IP0", ip, 4);
-  for (uint8_t i = 0; i < 4; i++)
+  if (preferences.isKey("IP0"))
   {
-    IP[i] = ip[i];
+    if (preferences.getBytes("IP0", ip, 4) == 4)
+      for (uint8_t i = 0; i < 4; i++)
+      {
+        IP[i] = ip[i];
+      }
   }
+  else
+  {
+    log_i("IP0 nicht gefunden! Bitte zunaechst Installationsroutine aufrufen!");
+    while (true)
+      {
+        // Hier bleibt das Programm stehen
+      }
+  }
+
   // Flags
   got1CANmsg = false;
   SYS_CMD_Request = false;
@@ -287,7 +303,7 @@ void receiveKanalData()
   if (testMinMax(oldval, channel_index[opFrame[data5] - 1], minadr, maxadr))
   {
     // speichert die neue Adresse
-    preferences.putUChar("channel_index"+ ('0' + opFrame[data5] - 1), channel_index[opFrame[data5] - 1]);
+    preferences.putUChar("channel_index" + ('0' + opFrame[data5] - 1), channel_index[opFrame[data5] - 1]);
   }
   else
   {
