@@ -25,6 +25,7 @@
 #include "soc/rtc_cntl_reg.h"
 
 Preferences preferences;
+const char* prefName = "CANguru";
 
 const uint8_t maxCntChannels = 16;
 
@@ -207,9 +208,9 @@ void setup()
   addMaster();
   WiFi.disconnect();
   // die preferences-Library wird gestartet
-  if (preferences.begin("MELDER", false))
+  if (preferences.begin(prefName, false))
   {
-    log_i("Preferences erfolgreich gestartet");
+    log_i("Preferences %s erfolgreich gestartet\r\n", prefName);
   }
   uint8_t setup_todo;
   if (preferences.isKey("setup_done"))
@@ -280,6 +281,7 @@ void setup()
   SEND_IP_Request = false;
   statusPING = false;
   time2Poll = 0;
+  bDecoderIsAlive = true;
   memset(msecs, 0, sizeof(msecs));
   memset(inputValue, 0, sizeof(inputValue));
   memset(channelStatus, isFree, sizeof(channelStatus));
@@ -289,7 +291,7 @@ void setup()
     pinMode(pins[p], OUTPUT);
   digitalWrite(enablePin, LOW);
   // Vorbereiten der Blink-LED
-  stillAliveBlinkSetup(GPIO_NUM_8);
+  stillAliveBlinkSetup(LED_BUILTIN);
 }
 
 // receiveKanalData dient der Parameterübertragung zwischen Decoder und CANguru-Server
